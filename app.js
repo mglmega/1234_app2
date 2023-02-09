@@ -12,9 +12,52 @@ var uiController = (function(){
         expenseLabel: '.budget__expenses--value',
         percentageLabel: '.budget__expenses--percentage',
         containerDiv: '.container',
-        deleteBtn: '.item__delete--btn'
+        deleteBtn: '.item__delete--btn',
+        expensePercentageLabel: '.item__percentage',
+        dataLabel: '.budget__title--month'
     };
-    //   
+    
+
+    var nodeListForEach = function( list, callback ){
+        for( var i = 0; i < list.length; i ++ ){
+            callback(list[i], i);
+        }
+    }
+
+
+    var formatMoney = function( too, type ){
+        too += '';
+        var x = too.split('').reverse().join('');
+
+        var y = '';
+        var count  = 1;
+
+        for( var i = 0; i < x.length; i++ ){
+            y += x[i];
+
+            if( count % 3 === 0 ){
+                y += ',';
+            }
+
+            count++;
+        }
+
+        var z = y.split('').reverse().join('');
+
+        if( z[0] === ',' ) z = z.substr(1, z.length - 1);
+
+        if(type ==='inc'){
+            z = '+' + z;
+        } else {
+            z = '-' + z;
+        }
+
+        return z;
+    }
+
+
+
+
 
     return{
         getInput: function(){
@@ -47,10 +90,10 @@ var uiController = (function(){
             fieldsArr[0].focus();
             // console.log(fields);
         },
-        tusviigUzuuleh:function(tusuv){
-            document.querySelector(DOMstrings.tusuvLabel).textContent = tusuv.tusuv;
-            document.querySelector(DOMstrings.incomeLabel).textContent = tusuv.totalInc;
-            document.querySelector(DOMstrings.expenseLabel).textContent = tusuv.totalExp;
+        tusviigUzuuleh: function(tusuv){
+            document.querySelector(DOMstrings.tusuvLabel).textContent = formatMoney(tusuv.tusuv, tusuv.tusuv >= 0 ? 'inc' : 'exp');
+            document.querySelector(DOMstrings.incomeLabel).textContent = formatMoney(tusuv.totalInc,'inc');
+            document.querySelector(DOMstrings.expenseLabel).textContent = formatMoney(tusuv.totalExp,'exp');
             document.querySelector(DOMstrings.percentageLabel).textContent = tusuv.huvi + '%';
         },
         addListItem: function(item, type){
@@ -58,10 +101,10 @@ var uiController = (function(){
             var html, list;
             if( type === 'inc' ){
                 list = DOMstrings.incomeList;
-                html = '<div class="item clearfix" id="inc-'+item.id+'"><div class="item__description">'+item.description+'</div><div class="right clearfix"><div class="item__value">'+item.value+'</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>';
+                html = '<div class="item clearfix" id="inc-'+item.id+'"><div class="item__description">'+item.description+'</div><div class="right clearfix"><div class="item__value">' + formatMoney(item.value, type) + '</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>';
             } else {
                 list = DOMstrings.expenseList;
-                html = '<div class="item clearfix" id="exp-'+item.id+'"><div class="item__description">'+item.description+'</div><div class="right clearfix"><div class="item__value">- '+item.value+'</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>';
+                html = '<div class="item clearfix" id="exp-'+item.id+'"><div class="item__description">'+item.description+'</div><div class="right clearfix"><div class="item__value"> ' + formatMoney(item.value, type) + '</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>';
             }
 
             // dom butsaah
@@ -70,9 +113,30 @@ var uiController = (function(){
             // input tseverleh
             
         },
-        deleteListItem( id ){
+        deleteListItem: function( id ){
             var el = document.getElementById(id);
             el.parentNode.removeChild(el);
+        },
+        displayPercentages: function( allPercentages ){
+            // nodelist
+            var elements = document.querySelectorAll(DOMstrings.expensePercentageLabel);
+            
+            // element bolgond awaj hiih
+            nodeListForEach(elements,function(el, index){
+                el.textContent = allPercentages[index] + '%';
+            });
+        },
+        displayDate: function(){
+            var unuudur = new Date();
+            document.querySelector(DOMstrings.dataLabel).textContent = unuudur.getFullYear() + '.' + unuudur.getMonth();
+        },
+        changeType: function(){
+            var fields = document.querySelectorAll(DOMstrings.inputType + ', ' + DOMstrings.inputDescription + ', ' + DOMstrings.inputValues);
+            nodeListForEach(fields, function(el){
+                el.classList.toggle('red-focus');
+            });
+
+            document.querySelector(DOMstrings.addBtn).classList.toggle('red');
         }
     }
 })();
@@ -242,6 +306,8 @@ var appController = (function(uiController, financeController){
             // event.target();
             // var id = split(el);
         });
+
+        document.querySelector(DOM.inputType).addEventListener('change', uiController.changeType);
     };
 
 
@@ -280,12 +346,13 @@ var appController = (function(uiController, financeController){
         var expPercentages = financeController.getPercentages();
 
         // delgetsend gargah
-        // uiController.updatePercentages(expPercentages);
+        uiController.displayPercentages(expPercentages);
     }
 
 
     return{
         init: function(){
+            uiController.displayDate();
             uiController.tusviigUzuuleh({
                 tusuv: 0,
                 huvi:0,
